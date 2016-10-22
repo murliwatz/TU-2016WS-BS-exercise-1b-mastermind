@@ -5,11 +5,11 @@ an exercise for Betriebsysteme WS2016
 mastermind is a tcp/ip client/server game written in c
 
 ## SYNOPSIS
-*server \<server-port\> <secret-sequence>*
-Example: server 1280 wwrgb
+*server \<server-port\> \<secret-sequence\>*
+Example: *server 1280 wwrgb*
 
-client <server-hostname> <server-port>
-Example: client localhost 1280
+*client \<server-hostname\> \<server-port\>*
+Example: *client localhost 1280*
 
 ## OPTIONS / FLAGS
 * <server-port>: Port where the server is listen to
