@@ -276,11 +276,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         bail_out(EXIT_FAILURE, "creating socket");
     }
     int optval = 1;
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) {
+    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
         bail_out(EXIT_FAILURE, "set socket option");
     }
 
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(options.portno);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if(bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
+    if(bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         bail_out(EXIT_FAILURE, "binding socket");
     }
 
@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
 
     struct sockaddr_in cli_addr;
     socklen_t cli_size;
-    if((connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_size)) == -1) {
+    if((connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_size)) < 0) {
         bail_out(EXIT_FAILURE, "accepting client");
     }
 
@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
 
         /* send message to client */
         //#error "insert your code here"
-        if(send(connfd, &buffer[0], WRITE_BYTES, 0) == -1) {
+        if(send(connfd, &buffer[0], WRITE_BYTES, 0) < 0) {
             bail_out(EXIT_FAILURE, "send_to_client");
         }
 
