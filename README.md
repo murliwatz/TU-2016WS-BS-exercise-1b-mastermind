@@ -6,9 +6,11 @@ mastermind is a tcp/ip client/server game written in c
 
 ## SYNOPSIS
 *server \<server-port\> \<secret-sequence\>*
+
 Example: *server 1280 wwrgb*
 
 *client \<server-hostname\> \<server-port\>*
+
 Example: *client localhost 1280*
 
 ## OPTIONS / FLAGS
