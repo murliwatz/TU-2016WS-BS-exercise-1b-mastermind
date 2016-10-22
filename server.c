@@ -276,15 +276,33 @@ int main(int argc, char *argv[])
         }
     }
 
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        bail_out(EXIT_FAILURE, "creating socket");
+    }
+    int optval = 1;
+    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) == -1) {
+        bail_out(EXIT_FAILURE, "set socket option");
+    }
 
+    struct sockaddr_in serv_addr;
 
-    /* Create a new TCP/IP socket `sockfd`, and set the SO_REUSEADDR
-       option for this socket. Then bind the socket to localhost:portno,
-       listen, and wait for new connections, which should be assigned to
-       `connfd`. Terminate the program in case of an error.
-    */
-    #error "insert your code here"
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(options.portno);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
 
+    if(bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
+        bail_out(EXIT_FAILURE, "binding socket");
+    }
+
+    if(listen(sockfd, BACKLOG) == -1) {
+        bail_out(EXIT_FAILURE, "listen socket");
+    }
+
+    struct sockaddr_in cli_addr;
+    socklen_t cli_size;
+    if((connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_size)) == -1) {
+        bail_out(EXIT_FAILURE, "accepting client");
+    }
 
     /* accepted the connection */
     ret = EXIT_SUCCESS;
@@ -311,7 +329,10 @@ int main(int argc, char *argv[])
         DEBUG("Sending byte 0x%x\n", buffer[0]);
 
         /* send message to client */
-        #error "insert your code here"
+        //#error "insert your code here"
+        if(send(connfd, &buffer[0], WRITE_BYTES, 0) == -1) {
+            bail_out(EXIT_FAILURE, "send_to_client");
+        }
 
         /* We sent the answer to the client; now stop the game
            if its over, or an error occured */
