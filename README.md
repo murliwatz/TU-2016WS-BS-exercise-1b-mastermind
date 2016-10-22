@@ -14,5 +14,5 @@ Example: *server 1280 wwrgb*
 Example: *client localhost 1280*
 
 ## OPTIONS / FLAGS
-* <server-port>: Port where the server is listen to
-* <secret-sequence>: A sequence of following characters which represent colors (**b**eige, **d**unkelblau, **g**rün, **o**range, **r**ot, **s**chwarz, **v**iolett, **w**eiß)
+* \<server-port\>: Port where the server is listen to
+* \<secret-sequence\>: A sequence of following characters which represent colors (**b**eige, **d**unkelblau, **g**rün, **o**range, **r**ot, **s**chwarz, **v**iolett, **w**eiß)
