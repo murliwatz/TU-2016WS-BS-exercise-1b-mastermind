@@ -30,10 +30,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <signal.h>
 #include <errno.h>
 #include <limits.h>
-#include "server.h"
+#include "client.h"
 
 /* === Macros === */
 
@@ -49,7 +50,7 @@
 /* === Global Variables === */
 
 /* Name of the program */
-static const char *progname = "server"; /* default name */
+static const char *progname = "client"; /* default name */
 
 /* File descriptor for server socket */
 static int sockfd = -1;
@@ -62,7 +63,7 @@ volatile sig_atomic_t quit = 0;
 
 /* === Implementations === */
 
-static uint8_t *read_from_client(int fd, uint8_t *buffer, size_t n)
+static uint8_t *read_from_server(int fd, uint8_t *buffer, size_t n)
 {
     /* loop, as packet can arrive in several partial reads */
     size_t bytes_recv = 0;
@@ -70,20 +71,18 @@ static uint8_t *read_from_client(int fd, uint8_t *buffer, size_t n)
         ssize_t r;
         r = recv(fd, buffer + bytes_recv, n - bytes_recv, 0);
         if (r <= 0) {
-            fprintf(stdout, "hh2 %d", r);
             return NULL;
         }
         bytes_recv += r;
     } while (bytes_recv < n);
 
     if (bytes_recv < n) {
-        fprintf(stdout, "hh");
         return NULL;
     }
     return buffer;
 }
 
-static uint8_t *send_to_client(int fd, uint8_t *buffer, size_t n)
+static uint8_t *send_to_server(int fd, uint8_t *buffer, size_t n)
 {
     /* loop, as packet can arrive in several partial reads */
     size_t bytes_sent = 0;
@@ -104,55 +103,8 @@ static uint8_t *send_to_client(int fd, uint8_t *buffer, size_t n)
 
 static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret)
 {
-    int colors_left[COLORS];
-    int guess[COLORS];
-    uint8_t parity_calc, parity_recv;
-    int red, white;
-    int j;
-
-    parity_recv = (req >> 15) & 1;
-
-    /* extract the guess and calculate parity */
-    parity_calc = 0;
-    for (j = 0; j < SLOTS; ++j) {
-        int tmp = req & 0x7;
-        parity_calc ^= tmp ^ (tmp >> 1) ^ (tmp >> 2);
-        guess[j] = tmp;
-        req >>= SHIFT_WIDTH;
-    }
-    parity_calc &= 0x1;
-
-    /* marking red and white */
-    (void) memset(&colors_left[0], 0, sizeof(colors_left));
-    red = white = 0;
-    for (j = 0; j < SLOTS; ++j) {
-        /* mark red */
-        printf("%d, %d\n", guess[j], secret[j]);
-        if (guess[j] == secret[j]) {
-            red++;
-        } else {
-            colors_left[secret[j]]++;
-        }
-    }
-    for (j = 0; j < SLOTS; ++j) {
-        /* not marked red */
-        if (guess[j] != secret[j]) {
-            if (colors_left[guess[j]] > 0) {
-                white++;
-                colors_left[guess[j]]--;
-            }
-        }
-    }
-
-    /* build response buffer */
-    resp[0] = red;
-    resp[0] |= (white << SHIFT_WIDTH);
-    if (parity_recv != parity_calc) {
-        resp[0] |= (1 << PARITY_ERR_BIT);
-        return -1;
-    } else {
-        return red;
-    }
+    /** TODO **/
+    return -1;
 }
 
 static void bail_out(int exitcode, const char *fmt, ...)
@@ -226,90 +178,59 @@ int main(int argc, char *argv[])
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         bail_out(EXIT_FAILURE, "creating socket");
     }
-    int optval = 1;
-    if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-        bail_out(EXIT_FAILURE, "set socket option");
-    }
 
     struct sockaddr_in serv_addr;
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(options.portno);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_addr.s_addr = options.hname.s_addr;
 
-    if(bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        bail_out(EXIT_FAILURE, "binding socket");
+    fprintf(stdout, "connecting...");
+
+    if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        bail_out(EXIT_FAILURE, "connecting to server");
     }
 
-    if(listen(sockfd, BACKLOG) == -1) {
-        bail_out(EXIT_FAILURE, "listen socket");
-    }
-
-    struct sockaddr_in cli_addr;
-    socklen_t cli_size;
-    if((connfd = accept(sockfd, (struct sockaddr *)&cli_addr, &cli_size)) < 0) {
-        bail_out(EXIT_FAILURE, "accepting client");
-    }
-
-    /* accepted the connection */
+    /* connection established */
     ret = EXIT_SUCCESS;
-    for (round = 1; round <= MAX_TRIES && !quit; ++round) {
-        uint16_t request;
-        static uint8_t buffer[BUFFER_BYTES];
-        int correct_guesses;
-        int error = 0;
+    
+    /** TODO **/
+    static uint16_t buffer;
 
-        sleep(1);
+    /*   if(send(sockfd, &buffer, WRITE_BYTES, 0) < 0) {
+        bail_out(EXIT_FAILURE, "send_to_server");
+    }
 
-        /* read from client */
-        if (read_from_client(connfd, &buffer[0], READ_BYTES) == NULL) {
-            if (quit) break; /* caught signal */
-            bail_out(EXIT_FAILURE, "read_from_client");
+    fprintf(stdout, "%d", sockfd);
+
+    if(read_from_server(sockfd, &buffer[0], READ_BYTES) == NULL) {
+        bail_out(EXIT_FAILURE, "read_from_server");
+    }*/
+
+    int colors[SLOTS] = {3,3,3,3,3};
+    int p = 0;
+    for(int i = 0; i < SLOTS; i++) {
+        buffer |= colors[i];
+        
+        if((i+1) < SLOTS)
+            buffer = buffer << 3;
+
+        for(int j = 0; j < 3; j++) {
+            p ^= (colors[i] & 1);
+            colors[i] = colors[i] >> 1;
         }
-        request = (buffer[1] << 8) | buffer[0];
-        DEBUG("Round %d: Received 0x%x\n", round, request);
+    }
 
-        /* compute answer */
-        correct_guesses = compute_answer(request, buffer, options.secret);
-        if (round == MAX_TRIES && correct_guesses != SLOTS) {
-            buffer[0] |= 1 << GAME_LOST_ERR_BIT;
-        }
+    buffer = buffer | (p << 15);
 
-        DEBUG("Sending byte 0x%x\n", buffer[0]);
-
-        /* send message to client */
-        //#error "insert your code here"
-        /*if(send(connfd, &buffer[0], WRITE_BYTES, 0) < 0) {
-            bail_out(EXIT_FAILURE, "send_to_client");
+    //for (round = 1; round <= MAX_TRIES && !quit; ++round) {
+    while(1) {
+        /*if(send(sockfd, &buffer, WRITE_BYTES, 0) < 0) {
+            bail_out(EXIT_FAILURE, "send_to_server");
         }*/
-
-        if (send_to_client(connfd, &buffer[0], WRITE_BYTES) == NULL) {
+        if (send_to_server(sockfd, &buffer, WRITE_BYTES) == NULL) {
             if (quit) break; /* caught signal */
-            bail_out(EXIT_FAILURE, "send_to_client");
-        }
-
-        /* We sent the answer to the client; now stop the game
-           if its over, or an error occured */
-        if (*buffer & (1<<PARITY_ERR_BIT)) {
-            (void) fprintf(stderr, "Parity error\n");
-            error = 1;
-            ret = EXIT_PARITY_ERROR;
-        }
-        if (*buffer & (1 << GAME_LOST_ERR_BIT)) {
-            (void) fprintf(stderr, "Game lost\n");
-            error = 1;
-            if (ret == EXIT_PARITY_ERROR) {
-                ret = EXIT_MULTIPLE_ERRORS;
-            } else {
-                ret = EXIT_GAME_LOST;
-            }
-        }
-        if (error) {
-            break;
-        } else if (correct_guesses == SLOTS) {
-            /* won */
-            (void) printf("Runden: %d\n", round);
-            break;
+            bail_out(EXIT_FAILURE, "send_to_server");
         }
     }
 
@@ -322,7 +243,7 @@ static void parse_args(int argc, char **argv, struct opts *options)
 {
     int i;
     char *port_arg;
-    char *secret_arg;
+    char *hname_arg;
     char *endptr;
     enum { beige, darkblue, green, orange, red, black, violet, white };
 
@@ -331,10 +252,10 @@ static void parse_args(int argc, char **argv, struct opts *options)
     }
     if (argc != 3) {
         bail_out(EXIT_FAILURE,
-            "Usage: %s <server-port> <secret-sequence>", progname);
+            "Usage: %s <server-hostname> <server-port>", progname);
     }
-    port_arg = argv[1];
-    secret_arg = argv[2];
+    port_arg = argv[2];
+    hname_arg = argv[1];
 
     errno = 0;
     options->portno = strtol(port_arg, &endptr, 10);
@@ -362,43 +283,10 @@ static void parse_args(int argc, char **argv, struct opts *options)
         bail_out(EXIT_FAILURE, "Use a valid TCP/IP port range (1-65535)");
     }
 
-    if (strlen(secret_arg) != SLOTS) {
-        bail_out(EXIT_FAILURE,
-            "<secret-sequence> has to be %d chars long", SLOTS);
+    struct in_addr ip;
+    if(inet_aton(hname_arg, &ip) < 0) {
+        bail_out(EXIT_FAILURE, "<server-hostname> can't be resolved");
     }
 
-    /* read secret */
-    for (i = 0; i < SLOTS; ++i) {
-        uint8_t color;
-        switch (secret_arg[i]) {
-        case 'b':
-            color = beige;
-            break;
-        case 'd':
-            color = darkblue;
-            break;
-        case 'g':
-            color = green;
-            break;
-        case 'o':
-            color = orange;
-            break;
-        case 'r':
-            color = red;
-            break;
-        case 's':
-            color = black;
-            break;
-        case 'v':
-            color = violet;
-            break;
-        case 'w':
-            color = white;
-            break;
-        default:
-            bail_out(EXIT_FAILURE,
-                "Bad Color '%c' in <secret-sequence>", secret_arg[i]);
-        }
-        options->secret[i] = color;
-    }
+    options->hname = ip;
 }
