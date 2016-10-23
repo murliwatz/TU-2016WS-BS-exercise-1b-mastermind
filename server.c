@@ -70,14 +70,12 @@ static uint8_t *read_from_client(int fd, uint8_t *buffer, size_t n)
         ssize_t r;
         r = recv(fd, buffer + bytes_recv, n - bytes_recv, 0);
         if (r <= 0) {
-            fprintf(stdout, "hh2 %d", r);
             return NULL;
         }
         bytes_recv += r;
     } while (bytes_recv < n);
 
     if (bytes_recv < n) {
-        fprintf(stdout, "hh");
         return NULL;
     }
     return buffer;
@@ -266,7 +264,11 @@ int main(int argc, char *argv[])
             if (quit) break; /* caught signal */
             bail_out(EXIT_FAILURE, "read_from_client");
         }
+
+        fprintf(stderr, "Runde %d\n", round);
+
         request = (buffer[1] << 8) | buffer[0];
+        //fprintf(stderr, "%d", request);
         DEBUG("Round %d: Received 0x%x\n", round, request);
 
         /* compute answer */

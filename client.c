@@ -34,6 +34,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 #include "client.h"
 
 /* === Macros === */
@@ -143,6 +144,31 @@ static void signal_handler(int sig)
     quit = 1;
 }
 
+static void gen_message(uint16_t *buffer) {
+    int colors[SLOTS] = {
+        rand() % COLORS,
+        rand() % COLORS,
+        rand() % COLORS,
+        rand() % COLORS,
+        rand() % COLORS
+    };
+
+    int parity_calc = 0;
+    for(int i = 0; i < SLOTS; i++) {
+        *buffer |= colors[i] & 0x7;
+
+        parity_calc ^= colors[i] ^ (colors[i] >> 1) ^ (colors[i] >> 2);
+        
+        if((i+1) < SLOTS)
+            *buffer = *buffer << 3;
+
+        //fprintf(stderr, "%d\n", colors[i]);
+    }
+
+    *buffer = *buffer | (parity_calc << 15);
+    //fprintf(stderr, "%d ", parity_calc & 0x1);
+}
+
 /**
  * @brief Program entry point
  * @param argc The argument counter
@@ -185,8 +211,6 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(options.portno);
     serv_addr.sin_addr.s_addr = options.hname.s_addr;
 
-    fprintf(stdout, "connecting...");
-
     if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         bail_out(EXIT_FAILURE, "connecting to server");
     }
@@ -197,41 +221,18 @@ int main(int argc, char *argv[])
     /** TODO **/
     static uint16_t buffer;
 
-    /*   if(send(sockfd, &buffer, WRITE_BYTES, 0) < 0) {
-        bail_out(EXIT_FAILURE, "send_to_server");
-    }
+    srand(time(NULL));
 
-    fprintf(stdout, "%d", sockfd);
-
-    if(read_from_server(sockfd, &buffer[0], READ_BYTES) == NULL) {
-        bail_out(EXIT_FAILURE, "read_from_server");
-    }*/
-
-    int colors[SLOTS] = {3,3,3,3,3};
-    int p = 0;
-    for(int i = 0; i < SLOTS; i++) {
-        buffer |= colors[i];
-        
-        if((i+1) < SLOTS)
-            buffer = buffer << 3;
-
-        for(int j = 0; j < 3; j++) {
-            p ^= (colors[i] & 1);
-            colors[i] = colors[i] >> 1;
-        }
-    }
-
-    buffer = buffer | (p << 15);
-
-    //for (round = 1; round <= MAX_TRIES && !quit; ++round) {
-    while(1) {
-        /*if(send(sockfd, &buffer, WRITE_BYTES, 0) < 0) {
-            bail_out(EXIT_FAILURE, "send_to_server");
-        }*/
+    for (round = 1; round <= MAX_TRIES; ++round) {
+        buffer = 0;
+        gen_message(&buffer);
         if (send_to_server(sockfd, &buffer, WRITE_BYTES) == NULL) {
             if (quit) break; /* caught signal */
             bail_out(EXIT_FAILURE, "send_to_server");
         }
+        //fprintf(stderr, "%d", buffer);
+
+        sleep(1);
     }
 
     /* we are done */
