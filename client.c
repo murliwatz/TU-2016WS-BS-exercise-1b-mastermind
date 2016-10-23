@@ -102,9 +102,17 @@ static uint8_t *send_to_server(int fd, uint8_t *buffer, size_t n)
     return buffer;
 }
 
-static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret)
+static int compute_answer(uint8_t req)
 {
     /** TODO **/
+    int red = req & 0x7;
+    req >>= 0x7;
+    int white = req & 0x7;
+    req >>= 0x1;
+    int parity_fault = req & 0x1;
+    req >>= 0x1;
+    int game_lost = req & 0x1;
+    fprintf(stderr, "Red: %d White: %d\n", red, white);
     return -1;
 }
 
@@ -220,6 +228,7 @@ int main(int argc, char *argv[])
     
     /** TODO **/
     static uint16_t buffer;
+    static uint8_t buffer_answer;
 
     srand(time(NULL));
 
@@ -230,6 +239,11 @@ int main(int argc, char *argv[])
             if (quit) break; /* caught signal */
             bail_out(EXIT_FAILURE, "send_to_server");
         }
+        if (read_from_server(sockfd, &buffer_answer, READ_BYTES) == NULL) {
+            if (quit) break; /* caught signal */
+            bail_out(EXIT_FAILURE, "read_from_server");
+        }
+        compute_answer(buffer_answer);
         //fprintf(stderr, "%d", buffer);
 
         sleep(1);

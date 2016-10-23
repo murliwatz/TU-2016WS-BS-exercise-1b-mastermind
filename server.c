@@ -142,6 +142,8 @@ static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret)
         }
     }
 
+    fprintf(stderr, "r: %d\n", red);
+
     /* build response buffer */
     resp[0] = red;
     resp[0] |= (white << SHIFT_WIDTH);
@@ -272,7 +274,7 @@ int main(int argc, char *argv[])
         DEBUG("Round %d: Received 0x%x\n", round, request);
 
         /* compute answer */
-        correct_guesses = compute_answer(request, buffer, options.secret);
+        correct_guesses = compute_answer(request, &buffer[0], options.secret);
         if (round == MAX_TRIES && correct_guesses != SLOTS) {
             buffer[0] |= 1 << GAME_LOST_ERR_BIT;
         }

@@ -64,7 +64,7 @@ static uint8_t *send_to_server(int sockfd_con, uint8_t *buffer, size_t n);
  * @param secret The server's secret
  * @return Number of correct matches on success; -1 in case of a parity error
  */
-static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret);
+static int compute_answer(uint8_t req);
 
 /**
  * @brief terminate program on program error
