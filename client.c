@@ -1,5 +1,5 @@
 /*
- * @brief main c file for the implementation of stegit
+ * @brief main c file for the implementation of mastermind client
  * @author Paul Pröll, 1525669
  * @date 2016-10-08
  *
@@ -83,9 +83,9 @@ static uint8_t *read_from_server(int fd, uint8_t *buffer, size_t n)
     return buffer;
 }
 
-static uint8_t *send_to_server(int fd, uint8_t *buffer, size_t n)
+static uint16_t *send_to_server(int fd, uint16_t *buffer, size_t n)
 {
-    /* loop, as packet can arrive in several partial reads */
+    /* loop, as packet can send in several partial writes */
     size_t bytes_sent = 0;
     do {
         ssize_t r;
@@ -104,15 +104,17 @@ static uint8_t *send_to_server(int fd, uint8_t *buffer, size_t n)
 
 static int compute_answer(uint8_t req)
 {
-    /** TODO **/
     int red = req & 0x7;
-    req >>= 0x7;
+    req >>= 0x3;
     int white = req & 0x7;
-    req >>= 0x1;
+    req >>= 0x3;
     int parity_fault = req & 0x1;
     req >>= 0x1;
     int game_lost = req & 0x1;
-    fprintf(stderr, "Red: %d White: %d\n", red, white);
+    fprintf(stderr, "Red: %d White: %d Parity fault: %d, game lost: %d\n", red, white, parity_fault, game_lost);
+    if(game_lost == 1) {
+        quit = 1;
+    }
     return -1;
 }
 
@@ -232,7 +234,7 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
-    for (round = 1; round <= MAX_TRIES; ++round) {
+    for (round = 1; !quit; round++) {
         buffer = 0;
         gen_message(&buffer);
         if (send_to_server(sockfd, &buffer, WRITE_BYTES) == NULL) {
@@ -243,8 +245,8 @@ int main(int argc, char *argv[])
             if (quit) break; /* caught signal */
             bail_out(EXIT_FAILURE, "read_from_server");
         }
+        //fprintf(stderr, "Runde %d: ", round);
         compute_answer(buffer_answer);
-        //fprintf(stderr, "%d", buffer);
 
         sleep(1);
     }
@@ -256,7 +258,6 @@ int main(int argc, char *argv[])
 
 static void parse_args(int argc, char **argv, struct opts *options)
 {
-    int i;
     char *port_arg;
     char *hname_arg;
     char *endptr;
@@ -299,7 +300,7 @@ static void parse_args(int argc, char **argv, struct opts *options)
     }
 
     struct in_addr ip;
-    if(inet_aton(hname_arg, &ip) < 0) {
+    if(inet_aton(hname_arg, &ip) == 0) {
         bail_out(EXIT_FAILURE, "<server-hostname> can't be resolved");
     }
 

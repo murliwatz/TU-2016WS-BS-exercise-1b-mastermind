@@ -1,5 +1,5 @@
 /*
- * @brief main c file for the implementation of stegit
+ * @brief main c file for the implementation of mastermind server
  * @author Paul Pröll, 1525669
  * @date 2016-10-08
  *
@@ -125,7 +125,7 @@ static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret)
     red = white = 0;
     for (j = 0; j < SLOTS; ++j) {
         /* mark red */
-        printf("%d, %d\n", guess[j], secret[j]);
+        printf("%d:%d, ", guess[j], secret[j]);
         if (guess[j] == secret[j]) {
             red++;
         } else {
@@ -142,7 +142,7 @@ static int compute_answer(uint16_t req, uint8_t *resp, uint8_t *secret)
         }
     }
 
-    fprintf(stderr, "r: %d\n", red);
+    printf("Red: %d\n", red);
 
     /* build response buffer */
     resp[0] = red;
@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
             bail_out(EXIT_FAILURE, "read_from_client");
         }
 
-        fprintf(stderr, "Runde %d\n", round);
+        fprintf(stdout, "Runde %d: ", round);
 
         request = (buffer[1] << 8) | buffer[0];
         //fprintf(stderr, "%d", request);
@@ -282,11 +282,6 @@ int main(int argc, char *argv[])
         DEBUG("Sending byte 0x%x\n", buffer[0]);
 
         /* send message to client */
-        //#error "insert your code here"
-        /*if(send(connfd, &buffer[0], WRITE_BYTES, 0) < 0) {
-            bail_out(EXIT_FAILURE, "send_to_client");
-        }*/
-
         if (send_to_client(connfd, &buffer[0], WRITE_BYTES) == NULL) {
             if (quit) break; /* caught signal */
             bail_out(EXIT_FAILURE, "send_to_client");
@@ -373,7 +368,7 @@ static void parse_args(int argc, char **argv, struct opts *options)
 
     /* read secret */
     for (i = 0; i < SLOTS; ++i) {
-        uint8_t color;
+        uint8_t color = '\0';
         switch (secret_arg[i]) {
         case 'b':
             color = beige;

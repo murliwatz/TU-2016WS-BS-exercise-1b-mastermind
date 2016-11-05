@@ -55,6 +55,16 @@ static void parse_args(int argc, char **argv, struct opts *options);
  */
 static uint8_t *read_from_client(int sockfd_con, uint8_t *buffer, size_t n);
 
+/**
+ * @brief Send message via socket
+ *
+ * This code *illustrates* one way to deal with partial reads
+ *
+ * @param sockfd_con Socket to send with
+ * @param buffer Buffer with data to write
+ * @param n Size to write
+ * @return Pointer to buffer on success, else NULL
+ */
 static uint8_t *send_to_client(int sockfd_con, uint8_t *buffer, size_t n);
 
 /**
